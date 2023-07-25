@@ -235,10 +235,239 @@ export class CreateCarActionDirective extends ComponentStore<ViewModel> {
 
 This directive can be used in a component to create a car. When the `run` method is called with the car data, it will call the `createCar` method of the `CarService` to create the car. It will emit events when the action starts, ends, succeeds, or fails, and it will update the `isRunning` and `error` properties of the state.
 
+## Stores
 
-- https://raw.githubusercontent.com/danmt/action-directives/master/services/coding-challenge-api.service.ts
-- https://raw.githubusercontent.com/danmt/action-directives/master/services/coding-challenge-submission-api.service.ts
-- https://raw.githubusercontent.com/danmt/action-directives/master/services/discord-event-api.service.ts
-- https://raw.githubusercontent.com/danmt/action-directives/master/services/event-api.service.ts
-- https://raw.githubusercontent.com/danmt/action-directives/master/services/participant-api.service.ts
-- https://raw.githubusercontent.com/danmt/action-directives/master/services/season-api.service.ts
+### Description
+
+An Angular store file is a TypeScript file that encapsulates state management logic for a specific feature in your application. It uses the `ComponentStore` class from the `@ngrx/component-store` package to manage state in a reactive, efficient, and scalable way. The state can represent a single document (like a user profile or a specific post) or multiple documents (like a list of users or posts).
+
+### When to Use
+
+Use Angular stores when you need to manage complex state in your application that goes beyond what can be easily managed with component state alone. This can include state for a single document, multiple documents, or even derived state that depends on multiple other states.
+
+### Requirements
+
+- Angular project setup
+- Knowledge of TypeScript
+- Understanding of RxJS and reactive programming
+- Familiarity with the `@ngrx/component-store` package
+
+### Characteristics
+
+- Stores are classes that extend `ComponentStore`.
+- Stores define a state interface and an initial state.
+- Stores define selectors to select slices of state.
+- Stores define updaters to synchronously update state.
+- Stores define effects to handle asynchronous operations and side effects.
+
+### Common Things
+
+- Stores often manage state related to API calls, including loading states, error states, and the data itself.
+- Stores use the `@Injectable` decorator from Angular core.
+- Stores can be provided in the root injector or in a specific component's injector.
+
+I apologize for the confusion earlier. Here are the corrected templates and examples for both single and multiple document stores:
+
+### Single Document Store
+
+#### Basic Template
+
+```typescript
+import { inject, Injectable } from '@angular/core';
+import { ComponentStore, tapResponse } from '@ngrx/component-store';
+import { EMPTY, switchMap } from 'rxjs';
+import { DocumentApiService } from '../services';
+
+interface ViewModel {
+  document: Document | null;
+  error: unknown;
+  isLoading: boolean;
+}
+
+const initialState: ViewModel = {
+  document: null,
+  error: null,
+  isLoading: false,
+};
+
+@Injectable()
+export class DocumentStore extends ComponentStore<ViewModel> {
+  private readonly _apiService = inject(DocumentApiService);
+
+  readonly document$ = this.select(({ document }) => document);
+  readonly isLoading$ = this.select(({ isLoading }) => isLoading);
+  readonly error$ = this.select(({ error }) => error);
+
+  private readonly _loadDocument = this.effect<void>(
+    switchMap(() => {
+      this.patchState({ isLoading: true });
+
+      return this._apiService.getDocument().pipe(
+        tapResponse(
+          (document) => this.patchState({ document, isLoading: false }),
+          (error) => this.patchState({ error, isLoading: false })
+        )
+      );
+    })
+  );
+
+  constructor() {
+    super(initialState);
+
+    this._loadDocument();
+  }
+}
+```
+
+#### Example: Car Store (Single Document)
+
+```typescript
+import { inject, Injectable } from '@angular/core';
+import { Car } from '../models';
+import { ComponentStore, tapResponse } from '@ngrx/component-store';
+import { EMPTY, switchMap } from 'rxjs';
+import { CarService } from '../services';
+
+interface ViewModel {
+  car: Car | null;
+  error: unknown;
+  isLoading: boolean;
+}
+
+const initialState: ViewModel = {
+  car: null,
+  error: null,
+  isLoading: false,
+};
+
+@Injectable()
+export class CarStore extends ComponentStore<ViewModel> {
+  private readonly _carService = inject(CarService);
+
+  readonly car$ = this.select(({ car }) => car);
+  readonly isLoading$ = this.select(({ isLoading }) => isLoading);
+  readonly error$ = this.select(({ error }) => error);
+
+  private readonly _loadCar = this.effect<void>(
+    switchMap(() => {
+      this.patchState({ isLoading: true });
+
+      return this._carService.getCar().pipe(
+        tapResponse(
+          (car) => this.patchState({ car, isLoading: false }),
+          (error) => this.patchState({ error, isLoading: false })
+        )
+      );
+    })
+  );
+
+  constructor() {
+    super(initialState);
+
+    this._loadCar();
+  }
+}
+```
+
+### Multiple Document Store
+
+#### Basic Template
+
+```typescript
+import { inject, Injectable } from '@angular/core';
+import { ComponentStore, tapResponse } from '@ngrx/component-store';
+import { EMPTY, switchMap } from 'rxjs';
+import { DocumentApiService } from '../services';
+
+interface ViewModel {
+  documents: Document[];
+  error: unknown;
+  isLoading: boolean;
+}
+
+const initialState: ViewModel = {
+  documents: [],
+  error: null,
+  isLoading: false,
+};
+
+@Injectable()
+export class DocumentsStore extends ComponentStore<ViewModel> {
+  private readonly _apiService = inject(DocumentApiService);
+
+  readonly documents$ = this.select(({ documents }) => documents);
+  readonly isLoading$ = this.select(({ isLoading }) => isLoading);
+  readonly error$ = this.select(({ error }) => error);
+
+  private readonly _loadDocuments = this.effect<void>(
+    switchMap(() => {
+      this.patchState({ isLoading: true });
+
+      return this._apiService.getDocuments().pipe(
+        tapResponse(
+          (documents) => this.patchState({ documents, isLoading: false }),
+          (error) => this.patchState({ error, isLoading: false })
+        )
+      );
+    })
+  );
+
+  constructor() {
+    super(initialState);
+
+    this._loadDocuments();
+  }
+}
+```
+
+#### Example: Cars Store (Multiple Documents)
+
+```typescript
+import { inject, Injectable } from '@angular/core';
+import { Car } from '../models';
+import { ComponentStore, tapResponse } from '@ngrx/component-store';
+import { EMPTY, switchMap } from 'rxjs';
+import { CarService } from '../services';
+
+interface ViewModel {
+  cars: Car[];
+  error: unknown;
+  isLoading: boolean;
+}
+
+const initialState: ViewModel = {
+  cars: [],
+  error: null,
+  isLoading: false,
+};
+
+@Injectable()
+export class CarsStore extends ComponentStore<ViewModel> {
+  private readonly _carService = inject(CarService);
+
+  readonly cars$ = this.select(({ cars }) => cars);
+  readonly isLoading$ = this.select(({ isLoading }) => isLoading);
+  readonly error$ = this.select(({ error }) => error);
+
+  private readonly _loadCars = this.effect<void>(
+    switchMap(() => {
+      this.patchState({ isLoading: true });
+
+      return this._carService.getCars().pipe(
+        tapResponse(
+          (cars) => this.patchState({ cars, isLoading: false }),
+          (error) => this.patchState({ error, isLoading: false })
+        )
+      );
+    })
+  );
+
+  constructor() {
+    super(initialState);
+
+    this._loadCars();
+  }
+}
+```
+
+In these examples, the single document store (`CarStore`) manages state for a single car, while the multiple document store (`CarsStore`) manages state for a list of cars. Both stores use the `CarService` to fetch data from the server.
